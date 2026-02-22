@@ -50,11 +50,11 @@ class ContentForApproval:
 class FeishuApprovalBot:
     """飞书审核机器人"""
     
-    def __init__(self):
-        self.app_id = os.getenv('FEISHU_APP_ID', '')
-        self.app_secret = os.getenv('FEISHU_APP_SECRET', '')
-        self.verify_token = os.getenv('FEISHU_VERIFY_TOKEN', '')
-        self.encrypt_key = os.getenv('FEISHU_ENCRYPT_KEY', '')
+    def __init__(self, app_id: str = '', app_secret: str = '', verify_token: str = '', encrypt_key: str = ''):
+        self.app_id = app_id or os.getenv('FEISHU_APP_ID', '')
+        self.app_secret = app_secret or os.getenv('FEISHU_APP_SECRET', '')
+        self.verify_token = verify_token or os.getenv('FEISHU_VERIFY_TOKEN', '')
+        self.encrypt_key = encrypt_key or os.getenv('FEISHU_ENCRYPT_KEY', '')
         
         self.enabled = bool(self.app_id and self.app_secret)
         

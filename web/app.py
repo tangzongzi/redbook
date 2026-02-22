@@ -63,7 +63,14 @@ except Exception as e:
 
 try:
     from feishu_approval_bot import FeishuApprovalBot, FeishuWebhookHandler, ContentForApproval
-    feishu_approval_bot = FeishuApprovalBot()
+    
+    feishu_config = load_config().get('feishu', {})
+    feishu_approval_bot = FeishuApprovalBot(
+        app_id=feishu_config.get('app_id', ''),
+        app_secret=feishu_config.get('app_secret', ''),
+        verify_token=feishu_config.get('verify_token', ''),
+        encrypt_key=feishu_config.get('encrypt_key', '')
+    )
     
     def on_approve(content: ContentForApproval, result):
         queue = load_queue()
@@ -255,8 +262,17 @@ def init_mcp():
     try:
         from mcp_publisher import MCPPublisher
         config = load_config()
+        mcp_config = config.get('mcp', {})
+        
+        if not mcp_config.get('enabled', True):
+            logger.info("MCP 发布器已禁用")
+            mcp_publisher = None
+            return
+        
         mcp_publisher = MCPPublisher({
-            'server_url': config.get('mcp', {}).get('server_url', 'http://xhs-mcp:18060')
+            'server_url': mcp_config.get('server_url', 'https://mcp.zouying.work/mcp'),
+            'api_key': mcp_config.get('api_key', '') or os.getenv('X_MCP_API_KEY', ''),
+            'timeout': mcp_config.get('timeout', 180)
         })
         logger.info("MCP 发布器初始化成功")
     except Exception as e:
@@ -557,7 +573,11 @@ def generate_content():
 @app.route('/api/config', methods=['GET'])
 def get_config():
     """获取配置"""
-    return jsonify(load_config())
+    config = load_config()
+    mcp_config = config.get('mcp', {})
+    config['mcpApiKey'] = mcp_config.get('api_key', '')
+    config['mcpServerUrl'] = mcp_config.get('server_url', 'https://mcp.zouying.work/mcp')
+    return jsonify(config)
 
 @app.route('/api/config', methods=['POST'])
 def save_config_api():
@@ -567,9 +587,49 @@ def save_config_api():
         if not data:
             return jsonify({'success': False, 'message': '无效数据'}), 400
         
+        existing_config = load_config()
+        
+        if 'feishuUserId' in data or 'feishuChatId' in data:
+            if 'xiaohongshu' not in existing_config:
+                existing_config['xiaohongshu'] = {}
+            existing_config['xiaohongshu']['feishu_user_id'] = data.get('feishuUserId', '')
+            existing_config['xiaohongshu']['feishu_chat_id'] = data.get('feishuChatId', '')
+        
+        if 'feishuAppId' in data or 'feishuAppSecret' in data or 'feishuVerifyToken' in data or 'feishuEncryptKey' in data:
+            if 'feishu' not in existing_config:
+                existing_config['feishu'] = {}
+            existing_config['feishu']['app_id'] = data.get('feishuAppId', '')
+            existing_config['feishu']['app_secret'] = data.get('feishuAppSecret', '')
+            existing_config['feishu']['verify_token'] = data.get('feishuVerifyToken', '')
+            existing_config['feishu']['encrypt_key'] = data.get('feishuEncryptKey', '')
+            if existing_config['feishu']['app_id'] and existing_config['feishu']['app_secret']:
+                existing_config['feishu']['enabled'] = True
+        
+        if 'mcpApiKey' in data or 'mcpServerUrl' in data:
+            if 'mcp' not in existing_config:
+                existing_config['mcp'] = {}
+            existing_config['mcp']['api_key'] = data.get('mcpApiKey', '')
+            existing_config['mcp']['server_url'] = data.get('mcpServerUrl', 'https://mcp.zouying.work/mcp')
+            existing_config['mcp']['enabled'] = True
+            global mcp_publisher
+            mcp_publisher = None
+        
+        if 'providers' in data:
+            existing_config['providers'] = data.get('providers')
+        
+        if 'keywords' in data:
+            if 'xiaohongshu' not in existing_config:
+                existing_config['xiaohongshu'] = {}
+            existing_config['xiaohongshu']['keywords'] = data.get('keywords', [])
+        
+        if 'style' in data:
+            if 'xiaohongshu' not in existing_config:
+                existing_config['xiaohongshu'] = {}
+            existing_config['xiaohongshu']['content_style'] = data.get('style', 'casual')
+        
         import yaml
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
+            yaml.dump(existing_config, f, allow_unicode=True, default_flow_style=False)
         
         clear_config_cache()
         logger.info("配置已保存")

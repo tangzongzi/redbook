@@ -1,38 +1,63 @@
 xiaohongshu:
-  # 内容生成关键词
   keywords:
     - "AI人工智能"
     - "数码科技"
     - "生活方式"
   
-  # 文案风格: casual(轻松) / professional(专业) / humorous(幽默) / story(故事)
   content_style: "casual"
   
-  # 每个主题生成图片数量
   images_per_post: 3
+  
+  feishu_user_id: ""
+  feishu_chat_id: ""
 
 scheduler:
-  # 内容生成时间 (每天几点自动生成)
   generate_times:
     - "09:00"
     - "14:00"
     - "19:00"
 
 mcp:
-  # MCP 服务地址
-  server_url: "http://xhs-mcp:18060"
+  enabled: true
+  
+  server_url: "https://mcp.zouying.work/mcp"
+  
+  api_key: ""
 
-# 飞书集成配置（可选）
+  timeout: 180
+
+search:
+  source: "duckduckgo"
+  max_results: 5
+  time_range: "week"
+
+deepseek:
+  api_key: ""
+  base_url: "https://api.deepseek.com/v1"
+  model: "deepseek-chat"
+  temperature: 0.7
+  max_tokens: 2000
+
+image:
+  source: "ai"
+  ai_provider: "pollinations"
+  count: 3
+  ratio: "3:4"
+
 feishu:
-  # 是否启用飞书集成
   enabled: false
   
-  # 审核模式
-  # - "manual": 在飞书表格中手动审核（推荐）
-  # - "auto": 自动生成后自动通过，无需审核
   approval_mode: "manual"
   
-  # 飞书表格字段映射（保持默认即可）
+  app_id: ""
+  app_secret: ""
+  verify_token: ""
+  encrypt_key: ""
+  
+  bitable:
+    app_token: ""
+    table_id: ""
+  
   field_mapping:
     title: "标题"
     content: "正文"
