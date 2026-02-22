@@ -1,0 +1,133 @@
+# ============================================
+# GitHub Actions: 自动构建并推送 Docker 镜像
+# 触发条件:
+#   - 推送到 main 分支时
+#   - 手动触发 (workflow_dispatch)
+#   - 创建新标签时 (发布新版本)
+# ============================================
+
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '镜像标签 (默认 latest)'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_WEB: ${{ github.repository }}-web
+  IMAGE_NAME_GENERATOR: ${{ github.repository }}-generator
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 设置 QEMU (用于多架构构建)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # 设置 Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 登录到 GitHub Container Registry
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 提取元数据 (标签和注释)
+      - name: Extract metadata for Web
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event.inputs.tag != '' }}
+
+      - name: Extract metadata for Generator
+        id: meta-generator
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_GENERATOR }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event.inputs.tag != '' }}
+
+      # 构建并推送 Web 镜像
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./web/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 构建并推送 Generator 镜像
+      - name: Build and push Generator image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./src
+          file: ./src/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-generator.outputs.tags }}
+          labels: ${{ steps.meta-generator.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 输出镜像信息
+      - name: Output image info
+        run: |
+          echo "📦 Web 镜像: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}"
+          echo "📦 Generator 镜像: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_GENERATOR }}"
+          echo "🏷️ 标签: ${{ steps.meta-web.outputs.tags }}"
+
+  # 自动更新部署（可选）
+  # 如果你希望推送到 NAS 自动更新，可以启用此 job
+  # deploy:
+  #   needs: build-and-push
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   steps:
+  #     - name: Trigger remote deployment
+  #       run: |
+  #         curl -X POST ${{ secrets.DEPLOY_WEBHOOK_URL }}

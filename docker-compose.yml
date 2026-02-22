@@ -1,0 +1,71 @@
+# ============================================
+# 小红书自动发布系统 - 开发环境配置
+# 用于本地开发和测试
+# ============================================
+
+version: '3.8'
+
+services:
+  # Web UI + API 服务
+  xhs-web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    container_name: xhs-web-dev
+    restart: unless-stopped
+    ports:
+      - "9999:8080"
+    volumes:
+      # 开发时挂载源代码
+      - ./src:/app/src:ro
+      - ./web:/app/web:ro
+      # 数据持久化
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Shanghai
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    networks:
+      - xhs-dev
+    command: python -m flask run --host=0.0.0.0 --port=8080 --reload
+
+  # 内容生成器
+  xhs-generator:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    container_name: xhs-generator-dev
+    restart: unless-stopped
+    volumes:
+      - ./src:/app:ro
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - TZ=Asia/Shanghai
+    networks:
+      - xhs-dev
+
+  # 小红书 MCP 服务
+  xhs-mcp:
+    image: xpzouying/xiaohongshu-mcp:latest
+    container_name: xhs-mcp-dev
+    restart: unless-stopped
+    ports:
+      - "18060:18060"
+    volumes:
+      - ./data/mcp:/app/data
+    networks:
+      - xhs-dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18060/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  xhs-dev:
+    driver: bridge

@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小红书自动发布 | Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #FF2442;
+            --primary-light: #FF4D6D;
+            --primary-dark: #E02040;
+            --bg-main: #0D0D12;
+            --bg-card: rgba(22, 22, 30, 0.8);
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-light: rgba(255, 255, 255, 0.12);
+            --text: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --success: #00D9A5;
+            --warning: #FFB020;
+            --error: #FF4757;
+            --info: #5B8DEF;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-main);
+            color: var(--text);
+            font-size: 13px;
+            line-height: 1.5;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at 20% 0%, rgba(255, 36, 66, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(91, 141, 239, 0.08) 0%, transparent 50%);
+        }
+
+        .navbar {
+            background: rgba(13, 13, 18, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 1.5rem;
+            height: 64px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(255, 36, 66, 0.4);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(0, 217, 165, 0.1);
+            border: 1px solid rgba(0, 217, 165, 0.2);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--success);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--success); }
+            50% { opacity: 0.5; box-shadow: 0 0 0 var(--success); }
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--border-light);
+            color: var(--text);
+        }
+
+        .main {
+            margin-top: 80px;
+            padding: 1.5rem;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--border-light);
+        }
+
+        .stat-card:hover::before { opacity: 1; }
+
+        .stat-card .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card .stat-icon.pending { background: rgba(255, 176, 32, 0.15); color: var(--warning); }
+        .stat-card .stat-icon.approved { background: rgba(0, 217, 165, 0.15); color: var(--success); }
+        .stat-card .stat-icon.published { background: rgba(91, 141, 239, 0.15); color: var(--info); }
+        .stat-card .stat-icon.today { background: rgba(255, 36, 66, 0.15); color: var(--primary); }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: var(--radius-sm);
+            border: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 36, 66, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 36, 66, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-light);
+        }
+
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: transparent; color: var(--error); border: 1px solid var(--error); }
+        .btn-sm { padding: 0.5rem 0.875rem; font-size: 0.8rem; }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1000px) { .content-grid { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .panel-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-body { padding: 0.75rem; }
+
+        .content-list {
+            max-height: calc(100vh - 380px);
+            overflow-y: auto;
+        }
+
+        .content-list::-webkit-scrollbar { width: 6px; }
+        .content-list::-webkit-scrollbar-track { background: transparent; }
+        .content-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .content-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            transition: all 0.2s;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.5rem;
+        }
+
+        .content-item:last-child { border-bottom: none; margin-bottom: 0; }
+        .content-item:hover { background: rgba(255, 255, 255, 0.03); }
+        .content-item.active { 
+            background: rgba(255, 36, 66, 0.08);
+            border-left-color: var(--primary);
+        }
+
+        .content-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .content-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        .content-badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-pending { background: rgba(255, 176, 32, 0.15); color: var(--warning); }
+        .badge-approved { background: rgba(0, 217, 165, 0.15); color: var(--success); }
+        .badge-published { background: rgba(91, 141, 239, 0.15); color: var(--info); }
+
+        .content-preview {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .content-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .xhs-preview-panel {
+            position: sticky;
+            top: 80px;
+        }
+
+        .xhs-preview-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .xhs-preview-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--primary);
+        }
+
+        .xhs-phone {
+            background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
+            border-radius: 28px;
+            padding: 10px;
+            margin: 1rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .xhs-screen {
+            background: #fff;
+            border-radius: 22px;
+            overflow: hidden;
+            min-height: 520px;
+            color: #333;
+        }
+
+        .xhs-note { background: #fff; }
+
+        .xhs-note-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .xhs-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+
+        .xhs-user-info { flex: 1; }
+        .xhs-username { font-size: 13px; font-weight: 600; color: #333; }
+        .xhs-time { font-size: 11px; color: #999; }
+
+        .xhs-follow-btn {
+            padding: 4px 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .xhs-image-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3/4;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            overflow: hidden;
+        }
+
+        .xhs-image-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .xhs-image-grid.cols-1 { grid-template-columns: 1fr; }
+        .xhs-image-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+        .xhs-image-grid.cols-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+        .xhs-image-item {
+            background: linear-gradient(135deg, #e9ecef, #dee2e6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+
+        .xhs-image-dots {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+        }
+
+        .xhs-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.2);
+        }
+        .xhs-dot.active { background: white; box-shadow: 0 0 4px rgba(0,0,0,0.3); }
+
+        .xhs-content { padding: 14px; }
+        .xhs-title { font-size: 14px; font-weight: 700; color: #333; line-height: 1.4; margin-bottom: 10px; }
+        .xhs-body { font-size: 13px; color: #333; line-height: 1.7; margin-bottom: 10px; white-space: pre-wrap; word-break: break-word; }
+        .xhs-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .xhs-tag { color: #576b95; font-size: 12px; }
+        .xhs-date { font-size: 11px; color: #999; margin-bottom: 12px; }
+
+        .xhs-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .xhs-action-left { display: flex; gap: 20px; }
+        .xhs-action-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #666; }
+
+        .xhs-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 450px;
+            color: #bbb;
+            text-align: center;
+            padding: 2rem;
+        }
+        .xhs-empty-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.3; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 92%;
+            max-width: 560px;
+            max-height: 85vh;
+            overflow: hidden;
+            transform: scale(0.95) translateY(20px);
+            transition: transform 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-overlay.active .modal { transform: scale(1) translateY(0); }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.05);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover { background: var(--error); color: white; transform: rotate(90deg); }
+        .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.75rem; }
+
+        .form-section { margin-bottom: 1.5rem; }
+        .form-section:last-child { margin-bottom: 0; }
+
+        .form-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 36, 66, 0.2);
+            display: inline-block;
+        }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-group:last-child { margin-bottom: 0; }
+
+        .form-label { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--text); }
+        .form-label .required { color: var(--error); margin-left: 3px; }
+        .form-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.375rem; }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 36, 66, 0.15);
+        }
+
+        .form-textarea { resize: vertical; min-height: 120px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+
+        .log-container {
+            background: #080a0d;
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 0.75rem;
+            line-height: 1.7;
+            max-height: 350px;
+            overflow-y: auto;
+            color: #c9d1d9;
+        }
+        .log-line { padding: 2px 0; }
+        .log-time { color: #6e7681; margin-right: 10px; }
+        .log-info { color: #58a6ff; }
+        .log-success { color: #3fb950; }
+        .log-warning { color: #d29922; }
+        .log-error { color: #f85149; }
+
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.875rem 1.25rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.25s ease;
+            font-size: 0.85rem;
+            min-width: 200px;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast-icon { 
+            width: 24px; height: 24px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 0.75rem; 
+            flex-shrink: 0;
+        }
+        .toast-success { background: rgba(0, 217, 165, 0.15); color: var(--success); }
+        .toast-error { background: rgba(255, 71, 87, 0.15); color: var(--error); }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.3; }
+
+        .provider-list { display: flex; flex-direction: column; gap: 1rem; }
+        .provider-item {
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+        .provider-item:hover { border-color: var(--border-light); }
+        .provider-item.has-key { border-color: rgba(0, 217, 165, 0.3); }
+        .provider-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+        .provider-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .provider-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        .provider-icon.deepseek { background: linear-gradient(135deg, #00A8E8, #0078D4); color: white; }
+        .provider-icon.openai { background: linear-gradient(135deg, #10A37F, #0D8B6D); color: white; }
+        .provider-icon.anthropic { background: linear-gradient(135deg, #D97757, #C45D3D); color: white; }
+        .provider-icon.moonshot { background: linear-gradient(135deg, #7C3AED, #5B21B6); color: white; }
+        .provider-icon.zhipu { background: linear-gradient(135deg, #2563EB, #1D4ED8); color: white; }
+        .provider-icon.baidu { background: linear-gradient(135deg, #2932E1, #1E24B0); color: white; }
+        .provider-icon.ali { background: linear-gradient(135deg, #FF6A00, #E55A00); color: white; }
+        .provider-icon.tencent { background: linear-gradient(135deg, #12B7F5, #0FA0D6); color: white; }
+        .provider-icon.doubao { background: linear-gradient(135deg, #FE4A49, #FF6B6B); color: white; }
+        .provider-name { font-weight: 600; font-size: 0.95rem; }
+        .provider-status {
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        .provider-status.active { background: rgba(0, 217, 165, 0.15); color: var(--success); }
+        .provider-status.inactive { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
+        .provider-key-input {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .provider-key-input input {
+            flex: 1;
+            padding: 0.625rem 0.875rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 0.85rem;
+            font-family: monospace;
+        }
+        .provider-key-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .provider-key-input input::placeholder { font-family: inherit; }
+        .provider-models {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+        .provider-models-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        .model-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .model-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .model-tag:hover { border-color: var(--border-light); }
+        .model-tag.selected {
+            background: rgba(255, 36, 66, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .model-tag .check { display: none; }
+        .model-tag.selected .check { display: inline; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#" class="logo">
+            <div class="logo-icon">📕</div>
+            <span>小红书自动发布系统</span>
+        </a>
+        <div class="nav-actions">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span>运行中</span>
+            </div>
+            <button class="nav-btn" data-action="logs">
+                <i class="fas fa-terminal"></i> 日志
+            </button>
+            <button class="nav-btn" data-action="config">
+                <i class="fas fa-cog"></i> 配置
+            </button>
+        </div>
+    </nav>
+
+    <main class="main">
+        <div class="stats-grid">
+            <div class="stat-card" data-stat="pending">
+                <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
+                <div class="stat-value" id="stat-pending">-</div>
+                <div class="stat-label">待审核</div>
+            </div>
+            <div class="stat-card" data-stat="approved">
+                <div class="stat-icon approved"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-value" id="stat-approved">-</div>
+                <div class="stat-label">已批准</div>
+            </div>
+            <div class="stat-card" data-stat="published">
+                <div class="stat-icon published"><i class="fas fa-paper-plane"></i></div>
+                <div class="stat-value" id="stat-published">-</div>
+                <div class="stat-label">已发布</div>
+            </div>
+            <div class="stat-card" data-stat="today">
+                <div class="stat-icon today"><i class="fas fa-magic"></i></div>
+                <div class="stat-value" id="stat-today">-</div>
+                <div class="stat-label">今日生成</div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn btn-primary" id="btn-generate" data-action="generate">
+                <i class="fas fa-sync"></i> 立即生成
+            </button>
+            <button class="btn btn-secondary" data-action="refresh">
+                <i class="fas fa-redo"></i> 刷新
+            </button>
+            <button class="btn btn-secondary" data-action="keywords">
+                <i class="fas fa-key"></i> 关键词
+            </button>
+            <button class="btn btn-secondary" data-action="publishSettings">
+                <i class="fas fa-cog"></i> 发布设置
+            </button>
+        </div>
+
+        <div class="content-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fas fa-inbox"></i> 内容审核</div>
+                    <span class="content-badge badge-pending" id="queue-badge">- 待处理</span>
+                </div>
+                <div class="panel-body">
+                    <div class="content-list" id="content-list"></div>
+                </div>
+            </div>
+
+            <div class="xhs-preview-panel">
+                <div class="panel">
+                    <div class="xhs-preview-header">
+                        <div class="xhs-preview-title">
+                            <i class="fas fa-mobile-alt"></i>
+                            小红书预览
+                        </div>
+                    </div>
+                    <div class="xhs-phone">
+                        <div class="xhs-screen" id="xhs-preview">
+                            <div class="xhs-empty">
+                                <div class="xhs-empty-icon">📱</div>
+                                <p>点击左侧内容<br>预览效果</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="logsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-terminal" style="color: var(--primary);"></i> 运行日志</div>
+                <button class="modal-close" data-close="logsModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="log-container" id="log-container">
+                    <div class="empty-state" style="padding: 2rem;">
+                        <i class="fas fa-history"></i>
+                        <p>暂无日志</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-action="clearLogs">清空</button>
+                <button class="btn btn-primary" data-close="logsModal">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="configModal">
+        <div class="modal" style="max-width: 680px;">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-cog" style="color: var(--primary);"></i> 系统配置</div>
+                <button class="modal-close" data-close="configModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-section">
+                    <div class="form-section-title">API Key 管理</div>
+                    <div class="provider-list" id="provider-list"></div>
+                </div>
+                <div class="form-section">
+                    <div class="form-section-title">飞书审核配置</div>
+                    <div class="form-group">
+                        <label class="form-label">飞书用户 ID</label>
+                        <input type="text" class="form-input" id="cfg-feishu-user" placeholder="ou_xxxxxx 或用户ID">
+                        <div class="form-hint">接收审核卡片的用户ID，可在飞书个人资料中查看</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">飞书群聊 ID</label>
+                        <input type="text" class="form-input" id="cfg-feishu-chat" placeholder="oc_xxxxxx">
+                        <div class="form-hint">接收审核卡片的群聊ID，优先使用用户ID</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-action="saveConfig">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="keywordsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-key" style="color: var(--primary);"></i> 关键词管理</div>
+                <button class="modal-close" data-close="keywordsModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">关键词列表 <span class="required">*</span></label>
+                    <textarea class="form-textarea" id="cfg-keywords" placeholder="每行一个关键词，如：&#10;AI人工智能&#10;数码科技&#10;效率工具"></textarea>
+                    <div class="form-hint">每行一个关键词，系统将根据这些关键词生成内容</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-close="keywordsModal">取消</button>
+                <button class="btn btn-primary" data-action="saveKeywords">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="publishSettingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title"><i class="fas fa-cog" style="color: var(--primary);"></i> 发布设置</div>
+                <button class="modal-close" data-close="publishSettingsModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-section">
+                    <div class="form-section-title">内容设置</div>
+                    <div class="form-group">
+                        <label class="form-label">内容风格</label>
+                        <select class="form-select" id="cfg-style">
+                            <option value="casual">轻松随意</option>
+                            <option value="professional">专业严谨</option>
+                            <option value="humorous">幽默风趣</option>
+                            <option value="story">故事叙述</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">配图数量</label>
+                        <input type="number" class="form-input" id="cfg-img-count" value="3" min="1" max="9">
+                    </div>
+                </div>
+                <div class="form-section">
+                    <div class="form-section-title">发布设置</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">每日限额</label>
+                            <input type="number" class="form-input" id="cfg-daily-limit" value="3" min="1" max="10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">发布间隔（分钟）</label>
+                            <input type="number" class="form-input" id="cfg-interval" value="60" min="10">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-close="publishSettingsModal">取消</button>
+                <button class="btn btn-primary" data-action="savePublishSettings">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const STORAGE_KEY = 'xhs_publisher_data';
+            const CONFIG_KEY = 'xhs_publisher_config';
+
+            const AppState = {
+                queueData: [],
+                currentId: null,
+                isGenerating: false,
+                config: {
+                    providers: [
+                        {
+                            id: 'deepseek',
+                            name: 'DeepSeek',
+                            icon: 'D',
+                            key: '',
+                            models: ['deepseek-chat', 'deepseek-reasoner', 'deepseek-v3', 'deepseek-v3-1'],
+                            enabledModels: ['deepseek-chat']
+                        },
+                        {
+                            id: 'openai',
+                            name: 'OpenAI',
+                            icon: 'O',
+                            key: '',
+                            models: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3', 'o3-mini'],
+                            enabledModels: ['gpt-4o']
+                        },
+                        {
+                            id: 'anthropic',
+                            name: 'Anthropic',
+                            icon: 'A',
+                            key: '',
+                            models: ['claude-sonnet-4-20250514', 'claude-sonnet-4-5', 'claude-opus-4-20251120', 'claude-haiku-3-5'],
+                            enabledModels: ['claude-sonnet-4-20250514']
+                        },
+                        {
+                            id: 'moonshot',
+                            name: '月之暗面',
+                            icon: 'M',
+                            key: '',
+                            models: ['kimi-k2-5', 'kimi-k2', 'kimi-v1-8k', 'kimi-v1-32k', 'kimi-v1-128k'],
+                            enabledModels: ['kimi-k2-5']
+                        },
+                        {
+                            id: 'zhipu',
+                            name: '智谱AI',
+                            icon: 'Z',
+                            key: '',
+                            models: ['glm-4-flash', 'glm-4-plus', 'glm-4', 'glm-4-flashx', 'glm-4-0520'],
+                            enabledModels: ['glm-4-flash']
+                        },
+                        {
+                            id: 'baidu',
+                            name: '百度',
+                            icon: 'B',
+                            key: '',
+                            models: ['ernie-4.0-8k', 'ernie-4.0-4k', 'ernie-3.5-8k', 'ernie-speed-8k', 'ernie-speed-32k'],
+                            enabledModels: ['ernie-4.0-8k']
+                        },
+                        {
+                            id: 'ali',
+                            name: '阿里云',
+                            icon: '阿',
+                            key: '',
+                            models: ['qwen-max', 'qwen-plus', 'qwen-turbo', 'qwen2-5-72b', 'qwen2-5-32b'],
+                            enabledModels: ['qwen-plus']
+                        },
+                        {
+                            id: 'tencent',
+                            name: '腾讯',
+                            icon: 'T',
+                            key: '',
+                            models: ['hunyuan-pro', 'hunyuan-standard', 'hunyuan-lite', 'hunyuan-flash'],
+                            enabledModels: ['hunyuan-standard']
+                        },
+                        {
+                            id: 'doubao',
+                            name: '字节跳动',
+                            icon: '字',
+                            key: '',
+                            models: ['doubao-seed-2-0', 'doubao-pro-32k', 'doubao-lite-32k', 'doubao-vision-pro'],
+                            enabledModels: ['doubao-seed-2-0']
+                        }
+                    ],
+                    defaultProvider: 'deepseek',
+                    keywords: [],
+                    style: 'casual',
+                    imgCount: 3,
+                    dailyLimit: 3,
+                    interval: 60,
+                    feishuUserId: '',
+                    feishuChatId: ''
+                }
+            };
+
+            const Templates = {
+                titles: [
+                    '🚀 2024年最值得学的AI工具',
+                    '💡 打工人必看的效率神器',
+                    '🎨 Midjourney新手教程',
+                    '📱 5个冷门但强大的App'
+                ],
+                contents: [
+                    '姐妹们！今天给大家安利几个我私藏的AI神器...\n\n用对工具，工作效率真的翻倍！',
+                    '最近发现了几款超好用的效率神器，你们还有什么推荐吗？',
+                    '很多姐妹问我AI绘画怎么入门，关键词写法很重要！'
+                ],
+                tags: [
+                    ['#AI工具', '#效率提升', '#职场干货'],
+                    ['#效率工具', '#职场技巧'],
+                    ['#AI绘画', '#Midjourney']
+                ],
+                authors: ['AI种草机', '效率达人', '科技博主']
+            };
+
+            function Utils() {
+                return {
+                    generateId: () => Date.now().toString(),
+                    randomItem: (arr) => arr[Math.floor(Math.random() * arr.length)],
+                    formatTime: (date) => new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    formatDate: (date) => new Date(date).toLocaleString(),
+                    truncate: (str, len) => str.length > len ? str.substring(0, len) + '...' : str,
+                    escapeHtml: (str) => {
+                        const div = document.createElement('div');
+                        div.textContent = str;
+                        return div.innerHTML;
+                    }
+                };
+            }
+
+            function Storage() {
+                return {
+                    save: (key, data) => {
+                        try {
+                            localStorage.setItem(key, JSON.stringify(data));
+                            return true;
+                        } catch (e) {
+                            console.error('Storage save error:', e);
+                            return false;
+                        }
+                    },
+                    load: (key, defaultVal = null) => {
+                        try {
+                            const data = localStorage.getItem(key);
+                            return data ? JSON.parse(data) : defaultVal;
+                        } catch (e) {
+                            console.error('Storage load error:', e);
+                            return defaultVal;
+                        }
+                    },
+                    remove: (key) => {
+                        try {
+                            localStorage.removeItem(key);
+                            return true;
+                        } catch (e) {
+                            return false;
+                        }
+                    }
+                };
+            }
+
+            function Toast() {
+                const container = document.getElementById('toast-container');
+                let toastId = 0;
+
+                return {
+                    show: (msg, type = 'success') => {
+                        const id = ++toastId;
+                        const toast = document.createElement('div');
+                        toast.className = 'toast';
+                        toast.innerHTML = `
+                            <div class="toast-icon toast-${type}">
+                                ${type === 'success' ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>'}
+                            </div>
+                            <div>${Utils().escapeHtml(msg)}</div>
+                        `;
+                        container.appendChild(toast);
+                        setTimeout(() => {
+                            if (toast.parentNode) toast.remove();
+                        }, 2800);
+                    }
+                };
+            }
+
+            function Logger() {
+                const container = document.getElementById('log-container');
+
+                return {
+                    log: (level, msg) => {
+                        const time = new Date().toLocaleTimeString();
+                        const empty = container.querySelector('.empty-state');
+                        if (empty) empty.remove();
+                        
+                        const div = document.createElement('div');
+                        div.className = 'log-line';
+                        div.innerHTML = `<span class="log-time">${time}</span><span class="log-${level}">[${level.toUpperCase()}]</span> ${Utils().escapeHtml(msg)}`;
+                        container.insertBefore(div, container.firstChild);
+                    },
+                    clear: () => {
+                        container.innerHTML = '<div class="empty-state" style="padding: 2rem;"><i class="fas fa-history"></i><p>暂无日志</p></div>';
+                    }
+                };
+            }
+
+            function Modal() {
+                const overlays = document.querySelectorAll('.modal-overlay');
+
+                return {
+                    open: (id) => {
+                        const modal = document.getElementById(id);
+                        if (modal) modal.classList.add('active');
+                    },
+                    close: (id) => {
+                        const modal = document.getElementById(id);
+                        if (modal) modal.classList.remove('active');
+                    },
+                    closeAll: () => {
+                        overlays.forEach(m => m.classList.remove('active'));
+                    }
+                };
+            }
+
+            function Stats() {
+                const getStat = (status) => AppState.queueData.filter(d => d.status === status).length;
+                const getToday = () => {
+                    const today = new Date().toDateString();
+                    return AppState.queueData.filter(d => new Date(d.created_at).toDateString() === today).length;
+                };
+
+                return {
+                    update: () => {
+                        document.getElementById('stat-pending').textContent = getStat('pending');
+                        document.getElementById('stat-approved').textContent = getStat('approved');
+                        document.getElementById('stat-published').textContent = getStat('published');
+                        document.getElementById('stat-today').textContent = getToday();
+                        
+                        const pending = getStat('pending');
+                        document.getElementById('queue-badge').textContent = `${pending} 待处理`;
+                    }
+                };
+            }
+
+            function ContentList() {
+                const list = document.getElementById('content-list');
+                const utils = Utils();
+
+                const renderEmpty = () => {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>暂无内容</p>
+                            <p style="font-size: 0.8rem; margin-top: 0.5rem;">点击"立即生成"创建内容</p>
+                        </div>
+                    `;
+                };
+
+                const getStatusText = (status) => {
+                    const map = { pending: '待审', approved: '已批', published: '已发布' };
+                    return map[status] || status;
+                };
+
+                const getActions = (item) => {
+                    if (item.status === 'pending') {
+                        return `
+                            <div class="content-actions">
+                                <button class="btn btn-success btn-sm" data-action="approve" data-id="${item.id}">
+                                    <i class="fas fa-check"></i> 通过
+                                </button>
+                                <button class="btn btn-danger btn-sm" data-action="reject" data-id="${item.id}">
+                                    <i class="fas fa-trash"></i> 删除
+                                </button>
+                            </div>
+                        `;
+                    } else if (item.status === 'approved') {
+                        return `
+                            <div class="content-actions">
+                                <button class="btn btn-primary btn-sm" data-action="publish" data-id="${item.id}">
+                                    <i class="fas fa-paper-plane"></i> 发布
+                                </button>
+                            </div>
+                        `;
+                    }
+                    return '';
+                };
+
+                return {
+                    render: () => {
+                        if (AppState.queueData.length === 0) {
+                            renderEmpty();
+                            return;
+                        }
+
+                        list.innerHTML = AppState.queueData.map((item, i) => `
+                            <div class="content-item ${i === 0 ? 'active' : ''}" data-id="${item.id}">
+                                <div class="content-header">
+                                    <div class="content-title">${utils.escapeHtml(item.title)}</div>
+                                    <span class="content-badge badge-${item.status}">${getStatusText(item.status)}</span>
+                                </div>
+                                <div class="content-preview">${utils.escapeHtml(utils.truncate(item.content, 80))}</div>
+                                <div class="content-meta">
+                                    <span><i class="fas fa-clock"></i> ${utils.formatTime(item.created_at)}</span>
+                                    <span><i class="fas fa-image"></i> ${item.images.length}张</span>
+                                    <span>${utils.escapeHtml(item.tags[0] || '')}</span>
+                                </div>
+                                ${getActions(item)}
+                            </div>
+                        `).join('');
+
+                        if (AppState.queueData.length > 0 && !AppState.currentId) {
+                            AppState.currentId = AppState.queueData[0].id;
+                        }
+                    }
+                };
+            }
+
+            function Preview() {
+                const container = document.getElementById('xhs-preview');
+                const utils = Utils();
+
+                const renderEmpty = () => {
+                    container.innerHTML = `
+                        <div class="xhs-empty">
+                            <div class="xhs-empty-icon">📱</div>
+                            <p>点击左侧内容<br>预览效果</p>
+                        </div>
+                    `;
+                };
+
+                const getGridClass = (count) => {
+                    if (count === 1) return 'xhs-image-grid cols-1';
+                    if (count === 2) return 'xhs-image-grid cols-2';
+                    if (count >= 4) return 'xhs-image-grid cols-4';
+                    return 'xhs-image-grid';
+                };
+
+                return {
+                    render: (id) => {
+                        const item = AppState.queueData.find(d => d.id === id);
+                        if (!item) {
+                            renderEmpty();
+                            return;
+                        }
+
+                        const imageCount = item.images.length;
+                        const gridClass = getGridClass(imageCount);
+
+                        container.innerHTML = `
+                            <div class="xhs-note">
+                                <div class="xhs-note-header">
+                                    <div class="xhs-avatar">${utils.escapeHtml(item.author[0])}</div>
+                                    <div class="xhs-user-info">
+                                        <div class="xhs-username">${utils.escapeHtml(item.author)}</div>
+                                        <div class="xhs-time">${utils.formatDate(item.created_at)}</div>
+                                    </div>
+                                    <button class="xhs-follow-btn">关注</button>
+                                </div>
+                                <div class="xhs-image-container">
+                                    <div class="${gridClass}">
+                                        ${Array(imageCount).fill('<div class="xhs-image-item">🖼️</div>').join('')}
+                                    </div>
+                                    ${imageCount > 1 ? `<div class="xhs-image-dots">${Array(imageCount).fill('<div class="xhs-dot"></div>').join('')}</div>` : ''}
+                                </div>
+                                <div class="xhs-content">
+                                    <div class="xhs-title">${utils.escapeHtml(item.title)}</div>
+                                    <div class="xhs-body">${utils.escapeHtml(item.content)}</div>
+                                    <div class="xhs-tags">${item.tags.map(t => `<span class="xhs-tag">${utils.escapeHtml(t)}</span>`).join('')}</div>
+                                    <div class="xhs-actions">
+                                        <div class="xhs-action-left">
+                                            <div class="xhs-action-item"><i class="fas fa-heart"></i> <span>${Math.floor(Math.random() * 500) + 50}</span></div>
+                                            <div class="xhs-action-item"><i class="fas fa-star"></i> <span>${Math.floor(Math.random() * 200) + 20}</span></div>
+                                            <div class="xhs-action-item"><i class="fas fa-comment"></i> <span>${Math.floor(Math.random() * 100) + 5}</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                };
+            }
+
+            function ProviderManager() {
+                const container = document.getElementById('provider-list');
+                const utils = Utils();
+
+                const render = () => {
+                    const providers = AppState.config.providers || [];
+                    const defaultProvider = AppState.config.defaultProvider;
+
+                    container.innerHTML = providers.map(provider => {
+                        const hasKey = provider.key && provider.key.trim().length > 0;
+                        const isDefault = provider.id === defaultProvider;
+
+                        return `
+                            <div class="provider-item ${hasKey ? 'has-key' : ''}" data-id="${provider.id}">
+                                <div class="provider-header">
+                                    <div class="provider-info">
+                                        <div class="provider-icon ${provider.id}">${provider.icon}</div>
+                                        <div class="provider-name">${provider.name}</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        ${isDefault ? '<span class="provider-status active">默认</span>' : `<button class="btn btn-sm btn-secondary" data-action="setDefaultProvider" data-id="${provider.id}">设为默认</button>`}
+                                        <span class="provider-status ${hasKey ? 'active' : 'inactive'}">${hasKey ? '已配置' : '未配置'}</span>
+                                    </div>
+                                </div>
+                                <div class="provider-key-input">
+                                    <input type="password" placeholder="${getPlaceholder(provider.id)}" value="${utils.escapeHtml(provider.key || '')}" data-provider="${provider.id}">
+                                    <button class="btn btn-sm btn-primary" data-action="saveProviderKey" data-id="${provider.id}">保存</button>
+                                </div>
+                                <div class="provider-models">
+                                    <div class="provider-models-label">可用模型（点击选择）:</div>
+                                    <div class="model-tags">
+                                        ${provider.models.map(model => `
+                                            <span class="model-tag ${provider.enabledModels.includes(model) ? 'selected' : ''}" data-action="toggleModel" data-provider="${provider.id}" data-model="${model}">
+                                                <span class="check"><i class="fas fa-check"></i> </span>${getModelName(model)}
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                };
+
+                const getPlaceholder = (id) => {
+                    const placeholders = {
+                        deepseek: 'sk-xxxxxxxx',
+                        openai: 'sk-proj-xxxxxxxx',
+                        anthropic: 'sk-ant-xxxxxxxx',
+                        moonshot: 'xxxxxxxx',
+                        zhipu: 'xxxxxxxx',
+                        baidu: 'xxxxxxxx',
+                        ali: 'sk-xxxxxxxx',
+                        tencent: 'xxxxxxxx',
+                        doubao: 'xxxxxxxx'
+                    };
+                    return placeholders[id] || 'API Key';
+                };
+
+                const getModelName = (model) => {
+                    const names = {
+                        'deepseek-chat': 'DeepSeek Chat',
+                        'deepseek-reasoner': 'DeepSeek Reasoner',
+                        'deepseek-v3': 'DeepSeek V3',
+                        'deepseek-v3-1': 'DeepSeek V3.1',
+                        'gpt-4o': 'GPT-4o',
+                        'gpt-4o-mini': 'GPT-4o Mini',
+                        'o1': 'o1',
+                        'o1-mini': 'o1-mini',
+                        'o3': 'o3',
+                        'o3-mini': 'o3-mini',
+                        'claude-sonnet-4-20250514': 'Claude Sonnet 4',
+                        'claude-sonnet-4-5': 'Claude Sonnet 4.5',
+                        'claude-opus-4-20251120': 'Claude Opus 4',
+                        'claude-haiku-3-5': 'Claude Haiku 3.5',
+                        'kimi-k2-5': 'Kimi K2.5',
+                        'kimi-k2': 'Kimi K2',
+                        'kimi-v1-8k': 'Kimi V1-8K',
+                        'kimi-v1-32k': 'Kimi V1-32K',
+                        'kimi-v1-128k': 'Kimi V1-128K',
+                        'glm-4-flash': 'GLM-4-Flash',
+                        'glm-4-plus': 'GLM-4-Plus',
+                        'glm-4': 'GLM-4',
+                        'glm-4-flashx': 'GLM-4-FlashX',
+                        'glm-4-0520': 'GLM-4-0520',
+                        'ernie-4.0-8k': 'ERNIE 4.0',
+                        'ernie-4.0-4k': 'ERNIE 4.0-4K',
+                        'ernie-3.5-8k': 'ERNIE 3.5',
+                        'ernie-speed-8k': 'ERNIE Speed',
+                        'ernie-speed-32k': 'ERNIE Speed-32K',
+                        'qwen-max': 'Qwen Max',
+                        'qwen-plus': 'Qwen Plus',
+                        'qwen-turbo': 'Qwen Turbo',
+                        'qwen2-5-72b': 'Qwen2.5-72B',
+                        'qwen2-5-32b': 'Qwen2.5-32B',
+                        'hunyuan-pro': 'Hunyuan Pro',
+                        'hunyuan-standard': 'Hunyuan Standard',
+                        'hunyuan-lite': 'Hunyuan Lite',
+                        'hunyuan-flash': 'Hunyuan Flash',
+                        'doubao-seed-2-0': 'Doubao Seed 2.0',
+                        'doubao-pro-32k': 'Doubao Pro 32K',
+                        'doubao-lite-32k': 'Doubao Lite 32K',
+                        'doubao-vision-pro': 'Doubao Vision Pro'
+                    };
+                    return names[model] || model;
+                };
+
+                return {
+                    render,
+                    saveKey: (providerId, key) => {
+                        const provider = AppState.config.providers.find(p => p.id === providerId);
+                        if (provider) {
+                            provider.key = key;
+                            Storage().save(CONFIG_KEY, AppState.config);
+                            render();
+                        }
+                    },
+                    setDefault: (providerId) => {
+                        AppState.config.defaultProvider = providerId;
+                        Storage().save(CONFIG_KEY, AppState.config);
+                        render();
+                    },
+                    toggleModel: (providerId, modelId) => {
+                        const provider = AppState.config.providers.find(p => p.id === providerId);
+                        if (provider) {
+                            const idx = provider.enabledModels.indexOf(modelId);
+                            if (idx > -1) {
+                                if (provider.enabledModels.length > 1) {
+                                    provider.enabledModels.splice(idx, 1);
+                                } else {
+                                    Toast().show('至少保留一个模型', 'error');
+                                    return;
+                                }
+                            } else {
+                                provider.enabledModels.push(modelId);
+                            }
+                            Storage().save(CONFIG_KEY, AppState.config);
+                            render();
+                        }
+                    }
+                };
+            }
+
+            function Actions() {
+                const toast = Toast();
+                const logger = Logger();
+                const storage = Storage();
+
+                return {
+                    approve: (id) => {
+                        const item = AppState.queueData.find(d => d.id === id);
+                        if (item) {
+                            item.status = 'approved';
+                            storage.save(STORAGE_KEY, AppState.queueData);
+                            ContentList().render();
+                            Preview().render(id);
+                            toast.show('已通过审核');
+                            logger.log('success', '内容审核通过');
+                        }
+                    },
+                    reject: (id) => {
+                        if (!confirm('确定删除这篇内容吗？')) return;
+                        const idx = AppState.queueData.findIndex(d => d.id === id);
+                        if (idx > -1) {
+                            AppState.queueData.splice(idx, 1);
+                            AppState.currentId = null;
+                            storage.save(STORAGE_KEY, AppState.queueData);
+                            ContentList().render();
+                            Stats().update();
+                            toast.show('已删除');
+                            logger.log('info', '内容已删除');
+                        }
+                    },
+                    publish: (id) => {
+                        const item = AppState.queueData.find(d => d.id === id);
+                        if (item) {
+                            item.status = 'published';
+                            storage.save(STORAGE_KEY, AppState.queueData);
+                            ContentList().render();
+                            Preview().render(id);
+                            Stats().update();
+                            toast.show('发布成功');
+                            logger.log('success', '内容已发布');
+                        }
+                    },
+                    generate: async () => {
+                        const btn = document.getElementById('btn-generate');
+                        if (AppState.isGenerating) return;
+                        
+                        AppState.isGenerating = true;
+                        btn.innerHTML = '<span class="loading"></span> 生成中...';
+                        btn.disabled = true;
+                        toast.show('开始生成内容...');
+                        logger.log('info', '开始生成内容');
+
+                        return new Promise(resolve => {
+                            setTimeout(() => {
+                                const newItem = {
+                                    id: Utils().generateId(),
+                                    title: Utils().randomItem(Templates.titles),
+                                    content: Utils().randomItem(Templates.contents),
+                                    tags: Utils().randomItem(Templates.tags),
+                                    images: Array(Math.floor(Math.random() * 4) + 2).fill(1),
+                                    status: 'pending',
+                                    created_at: new Date().toISOString(),
+                                    author: Utils().randomItem(Templates.authors)
+                                };
+                                AppState.queueData.unshift(newItem);
+                                AppState.isGenerating = false;
+                                btn.innerHTML = '<i class="fas fa-sync"></i> 立即生成';
+                                btn.disabled = false;
+                                storage.save(STORAGE_KEY, AppState.queueData);
+                                ContentList().render();
+                                Stats().update();
+                                toast.show('内容生成完成');
+                                logger.log('success', '内容生成完成');
+                                resolve();
+                            }, 2000);
+                        });
+                    },
+                    saveConfig: async () => {
+                        try {
+                            const response = await fetch('/api/config', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(AppState.config)
+                            });
+                            const result = await response.json();
+                            if (result.success) {
+                                storage.save(CONFIG_KEY, AppState.config);
+                                Toast().show('配置已保存到服务器');
+                                Modal().close('configModal');
+                                Logger().log('success', '系统配置已更新');
+                            } else {
+                                Toast().show(result.message || '保存失败', 'error');
+                            }
+                        } catch (e) {
+                            storage.save(CONFIG_KEY, AppState.config);
+                            Toast().show('已保存到本地（服务器同步失败）');
+                            Modal().close('configModal');
+                        }
+                    },
+                    saveKeywords: () => {
+                        const keywords = document.getElementById('cfg-keywords').value.split('\n').filter(k => k.trim());
+                        if (keywords.length === 0) {
+                            toast.show('请输入至少一个关键词', 'error');
+                            return;
+                        }
+                        AppState.config.keywords = keywords;
+                        storage.save(CONFIG_KEY, AppState.config);
+                        toast.show(`已保存 ${keywords.length} 个关键词`);
+                        Modal().close('keywordsModal');
+                        logger.log('success', `关键词已更新：${keywords.length}个`);
+                    },
+                    savePublishSettings: () => {
+                        AppState.config.style = document.getElementById('cfg-style').value;
+                        AppState.config.imgCount = parseInt(document.getElementById('cfg-img-count').value) || 3;
+                        AppState.config.dailyLimit = parseInt(document.getElementById('cfg-daily-limit').value) || 3;
+                        AppState.config.interval = parseInt(document.getElementById('cfg-interval').value) || 60;
+                        storage.save(CONFIG_KEY, AppState.config);
+                        toast.show('发布设置已保存');
+                        Modal().close('publishSettingsModal');
+                        logger.log('success', '发布设置已更新');
+                    },
+                    refresh: () => {
+                        AppState.queueData = Storage().load(STORAGE_KEY, []);
+                        ContentList().render();
+                        Stats().update();
+                        if (AppState.currentId) {
+                            Preview().render(AppState.currentId);
+                        }
+                        toast.show('数据已刷新');
+                        logger.log('info', '数据已刷新');
+                    },
+                    clearLogs: () => {
+                        Logger().clear();
+                        toast.show('日志已清空');
+                    }
+                };
+            }
+
+            function EventHandler() {
+                document.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-action]');
+                    if (btn) {
+                        const action = btn.dataset.action;
+                        const actions = Actions();
+                        
+                        switch (action) {
+                            case 'logs':
+                                Modal().open('logsModal');
+                                Logger().log('info', '查看日志');
+                                break;
+                            case 'config':
+                                Modal().open('configModal');
+                                ProviderManager().render();
+                                break;
+                            case 'keywords':
+                                Modal().open('keywordsModal');
+                                break;
+                            case 'publishSettings':
+                                Modal().open('publishSettingsModal');
+                                break;
+                            case 'generate':
+                                actions.generate();
+                                break;
+                            case 'refresh':
+                                actions.refresh();
+                                break;
+                            case 'saveConfig':
+                                actions.saveConfig();
+                                break;
+                            case 'saveKeywords':
+                                actions.saveKeywords();
+                                break;
+                            case 'savePublishSettings':
+                                actions.savePublishSettings();
+                                break;
+                            case 'saveProviderKey':
+                                const providerId = btn.dataset.id;
+                                const input = document.querySelector(`input[data-provider="${providerId}"]`);
+                                if (input) {
+                                    ProviderManager().saveKey(providerId, input.value);
+                                    Toast().show('API Key 已保存');
+                                }
+                                break;
+                            case 'setDefaultProvider':
+                                ProviderManager().setDefault(btn.dataset.id);
+                                Toast().show('已设为默认服务商');
+                                break;
+                            case 'toggleModel':
+                                ProviderManager().toggleModel(btn.dataset.provider, btn.dataset.model);
+                                break;
+                            case 'clearLogs':
+                                actions.clearLogs();
+                                break;
+                            case 'approve':
+                                actions.approve(btn.dataset.id);
+                                break;
+                            case 'reject':
+                                actions.reject(btn.dataset.id);
+                                break;
+                            case 'publish':
+                                actions.publish(btn.dataset.id);
+                                break;
+                            case 'sendToFeishu':
+                                actions.sendToFeishu(btn.dataset.id);
+                                break;
+                        }
+                        return;
+                    }
+
+                    const closeBtn = e.target.closest('[data-close]');
+                    if (closeBtn) {
+                        Modal().close(closeBtn.dataset.close);
+                        return;
+                    }
+
+                    const modalOverlay = e.target.closest('.modal-overlay');
+                    if (modalOverlay && e.target === modalOverlay) {
+                        Modal().closeAll();
+                    }
+                });
+
+                document.querySelector('.content-list').addEventListener('click', (e) => {
+                    const item = e.target.closest('.content-item');
+                    if (item && !e.target.closest('button')) {
+                        const id = item.dataset.id;
+                        AppState.currentId = id;
+                        document.querySelectorAll('.content-item').forEach(el => el.classList.remove('active'));
+                        item.classList.add('active');
+                        Preview().render(id);
+                    }
+                });
+            }
+
+            async function init() {
+                const storage = Storage();
+                AppState.queueData = storage.load(STORAGE_KEY, []);
+                
+                try {
+                    const response = await fetch('/api/config');
+                    if (response.ok) {
+                        const serverConfig = await response.json();
+                        if (serverConfig && Object.keys(serverConfig).length > 0) {
+                            const savedConfig = storage.load(CONFIG_KEY, null);
+                            AppState.config = { ...AppState.config, ...serverConfig };
+                            if (savedConfig) {
+                                AppState.config.providers = serverConfig.providers || AppState.config.providers;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    const savedConfig = storage.load(CONFIG_KEY, null);
+                    if (savedConfig) {
+                        AppState.config = { ...AppState.config, ...savedConfig };
+                    }
+                }
+
+                ContentList().render();
+                Stats().update();
+                EventHandler();
+
+                Logger().log('info', '系统启动成功');
+
+                if (AppState.currentId) {
+                    Preview().render(AppState.currentId);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+# ============================================
+# 小红书自动发布系统 - 生产环境配置
+# 用于 NAS 部署，使用预构建镜像
+# ============================================
+
+version: '3.8'
+
+services:
+  # Web UI + API 服务
+  xhs-web:
+    image: ghcr.io/${GITHUB_USER:-yourusername}/xiaohongshu-auto-publisher-web:latest
+    container_name: xhs-web
+    restart: unless-stopped
+    ports:
+      - "9999:8080"
+    volumes:
+      # 只挂载数据和配置（代码在镜像中）
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Shanghai
+      - PYTHONUNBUFFERED=1
+    networks:
+      - xhs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 内容生成器
+  xhs-generator:
+    image: ghcr.io/${GITHUB_USER:-yourusername}/xiaohongshu-auto-publisher-generator:latest
+    container_name: xhs-generator
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - TZ=Asia/Shanghai
+      - PYTHONUNBUFFERED=1
+    networks:
+      - xhs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 小红书 MCP 服务
+  xhs-mcp:
+    image: xpzouying/xiaohongshu-mcp:latest
+    container_name: xhs-mcp
+    restart: unless-stopped
+    ports:
+      - "18060:18060"
+    volumes:
+      - ./data/mcp:/app/data
+    networks:
+      - xhs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18060/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # 可选：自动更新服务（Watchtower）
+  # 启用后会自动拉取最新镜像并重启容器
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: xhs-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/watchtower:/config
+    environment:
+      - TZ=Asia/Shanghai
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_SCHEDULE=0 0 4 * * *  # 每天凌晨4点检查更新
+      - WATCHTOWER_INCLUDE_STOPPED=true
+      - WATCHTOWER_REVIVE_STOPPED=true
+      # 如果需要拉取私有镜像，配置 GitHub Token
+      - REPO_USER=${GITHUB_USER}
+      - REPO_PASS=${GITHUB_TOKEN}
+    command: xhs-web xhs-generator
+    profiles:
+      - auto-update  # 使用 docker-compose --profile auto-update up -d 启用
+
+networks:
+  xhs:
+    driver: bridge

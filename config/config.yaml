@@ -1,0 +1,47 @@
+xiaohongshu:
+  # 内容生成关键词
+  keywords:
+    - "AI人工智能"
+    - "数码科技"
+    - "生活方式"
+  
+  # 文案风格: casual(轻松) / professional(专业) / humorous(幽默) / story(故事)
+  content_style: "casual"
+  
+  # 每个主题生成图片数量
+  images_per_post: 3
+
+scheduler:
+  # 内容生成时间 (每天几点自动生成)
+  generate_times:
+    - "09:00"
+    - "14:00"
+    - "19:00"
+
+mcp:
+  # MCP 服务地址
+  server_url: "http://xhs-mcp:18060"
+
+# 飞书集成配置（可选）
+feishu:
+  # 是否启用飞书集成
+  enabled: false
+  
+  # 审核模式
+  # - "manual": 在飞书表格中手动审核（推荐）
+  # - "auto": 自动生成后自动通过，无需审核
+  approval_mode: "manual"
+  
+  # 飞书表格字段映射（保持默认即可）
+  field_mapping:
+    title: "标题"
+    content: "正文"
+    tags: "标签"
+    summary: "摘要"
+    keywords: "关键词"
+    image_paths: "图片路径"
+    status: "状态"
+    created_at: "创建时间"
+    published_at: "发布时间"
+    note_id: "笔记ID"
+    share_url: "分享链接"

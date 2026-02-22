@@ -1,0 +1,51 @@
+# ============================================
+# 小红书自动发布系统 - 简化版配置
+# 适合快速体验，所有服务在一个 compose 文件中
+# ============================================
+
+version: '3.8'
+
+services:
+  xhs-web:
+    image: ghcr.io/${GITHUB_USER:-yourusername}/xiaohongshu-auto-publisher-web:latest
+    container_name: xhs-web
+    restart: unless-stopped
+    ports:
+      - "9999:8080"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - xhs
+
+  xhs-generator:
+    image: ghcr.io/${GITHUB_USER:-yourusername}/xiaohongshu-auto-publisher-generator:latest
+    container_name: xhs-generator
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - TZ=Asia/Shanghai
+    networks:
+      - xhs
+
+  xhs-mcp:
+    image: xpzouying/xiaohongshu-mcp:latest
+    container_name: xhs-mcp
+    restart: unless-stopped
+    ports:
+      - "18060:18060"
+    volumes:
+      - ./data/mcp:/app/data
+    networks:
+      - xhs
+
+networks:
+  xhs:
+    driver: bridge
