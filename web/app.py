@@ -11,6 +11,7 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Any, Optional, List
 
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
@@ -575,8 +576,11 @@ def get_config():
     """获取配置"""
     config = load_config()
     mcp_config = config.get('mcp', {})
+    scheduler_config = config.get('scheduler', {})
     config['mcpApiKey'] = mcp_config.get('api_key', '')
     config['mcpServerUrl'] = mcp_config.get('server_url', 'https://mcp.zouying.work/mcp')
+    config['dailyLimit'] = scheduler_config.get('daily_limit', 3)
+    config['interval'] = scheduler_config.get('interval', 60)
     return jsonify(config)
 
 @app.route('/api/config', methods=['POST'])
@@ -626,6 +630,19 @@ def save_config_api():
             if 'xiaohongshu' not in existing_config:
                 existing_config['xiaohongshu'] = {}
             existing_config['xiaohongshu']['content_style'] = data.get('style', 'casual')
+        
+        if 'imgCount' in data:
+            if 'xiaohongshu' not in existing_config:
+                existing_config['xiaohongshu'] = {}
+            existing_config['xiaohongshu']['images_per_post'] = data.get('imgCount', 3)
+        
+        if 'dailyLimit' in data or 'interval' in data:
+            if 'scheduler' not in existing_config:
+                existing_config['scheduler'] = {}
+            if 'dailyLimit' in data:
+                existing_config['scheduler']['daily_limit'] = data.get('dailyLimit', 3)
+            if 'interval' in data:
+                existing_config['scheduler']['interval'] = data.get('interval', 60)
         
         import yaml
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:

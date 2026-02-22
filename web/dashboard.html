@@ -1766,15 +1766,36 @@
                         
                         Modal().close('keywordsModal');
                     },
-                    savePublishSettings: () => {
+                    savePublishSettings: async () => {
                         AppState.config.style = document.getElementById('cfg-style').value;
                         AppState.config.imgCount = parseInt(document.getElementById('cfg-img-count').value) || 3;
                         AppState.config.dailyLimit = parseInt(document.getElementById('cfg-daily-limit').value) || 3;
                         AppState.config.interval = parseInt(document.getElementById('cfg-interval').value) || 60;
                         storage.save(CONFIG_KEY, AppState.config);
-                        toast.show('发布设置已保存');
+                        
+                        try {
+                            const response = await fetch('/api/config', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    style: AppState.config.style,
+                                    imgCount: AppState.config.imgCount,
+                                    dailyLimit: AppState.config.dailyLimit,
+                                    interval: AppState.config.interval
+                                })
+                            });
+                            const result = await response.json();
+                            if (result.success) {
+                                toast.show('发布设置已保存');
+                                logger.log('success', '发布设置已更新');
+                            } else {
+                                toast.show('服务器同步失败，已保存到本地');
+                            }
+                        } catch (e) {
+                            toast.show('发布设置已保存（本地）');
+                        }
+                        
                         Modal().close('publishSettingsModal');
-                        logger.log('success', '发布设置已更新');
                     },
                     refresh: () => {
                         AppState.queueData = Storage().load(STORAGE_KEY, []);
@@ -1834,6 +1855,14 @@
                                 break;
                             case 'publishSettings':
                                 Modal().open('publishSettingsModal');
+                                const cfgStyle = document.getElementById('cfg-style');
+                                const cfgImgCount = document.getElementById('cfg-img-count');
+                                const cfgDailyLimit = document.getElementById('cfg-daily-limit');
+                                const cfgInterval = document.getElementById('cfg-interval');
+                                if (cfgStyle) cfgStyle.value = AppState.config.style || 'casual';
+                                if (cfgImgCount) cfgImgCount.value = AppState.config.imgCount || 3;
+                                if (cfgDailyLimit) cfgDailyLimit.value = AppState.config.dailyLimit || 3;
+                                if (cfgInterval) cfgInterval.value = AppState.config.interval || 60;
                                 break;
                             case 'generate':
                                 actions.generate();
@@ -1938,6 +1967,12 @@
                             if (serverConfig.mcp) {
                                 AppState.config.mcpApiKey = serverConfig.mcp.api_key || '';
                                 AppState.config.mcpServerUrl = serverConfig.mcp.server_url || 'https://mcp.zouying.work/mcp';
+                            }
+                            if (serverConfig.dailyLimit !== undefined) {
+                                AppState.config.dailyLimit = serverConfig.dailyLimit;
+                            }
+                            if (serverConfig.interval !== undefined) {
+                                AppState.config.interval = serverConfig.interval;
                             }
                         }
                     }

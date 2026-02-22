@@ -1,72 +1,164 @@
-xiaohongshu:
-  keywords:
-    - "AI人工智能"
-    - "数码科技"
-    - "生活方式"
-  
-  content_style: "casual"
-  
-  images_per_post: 3
-  
-  feishu_user_id: ""
-  feishu_chat_id: ""
-
-scheduler:
-  generate_times:
-    - "09:00"
-    - "14:00"
-    - "19:00"
-
-mcp:
-  enabled: true
-  
-  server_url: "https://mcp.zouying.work/mcp"
-  
-  api_key: ""
-
-  timeout: 180
-
-search:
-  source: "duckduckgo"
-  max_results: 5
-  time_range: "week"
-
 deepseek:
-  api_key: ""
-  base_url: "https://api.deepseek.com/v1"
-  model: "deepseek-chat"
-  temperature: 0.7
+  api_key: ''
+  base_url: https://api.deepseek.com/v1
   max_tokens: 2000
-
-image:
-  source: "ai"
-  ai_provider: "pollinations"
-  count: 3
-  ratio: "3:4"
-
+  model: deepseek-chat
+  temperature: 0.7
 feishu:
-  enabled: false
-  
-  approval_mode: "manual"
-  
-  app_id: ""
-  app_secret: ""
-  verify_token: ""
-  encrypt_key: ""
-  
+  app_id: ''
+  app_secret: ''
+  approval_mode: manual
   bitable:
-    app_token: ""
-    table_id: ""
-  
+    app_token: ''
+    table_id: ''
+  enabled: false
+  encrypt_key: ''
   field_mapping:
-    title: "标题"
-    content: "正文"
-    tags: "标签"
-    summary: "摘要"
-    keywords: "关键词"
-    image_paths: "图片路径"
-    status: "状态"
-    created_at: "创建时间"
-    published_at: "发布时间"
-    note_id: "笔记ID"
-    share_url: "分享链接"
+    content: 正文
+    created_at: 创建时间
+    image_paths: 图片路径
+    keywords: 关键词
+    note_id: 笔记ID
+    published_at: 发布时间
+    share_url: 分享链接
+    status: 状态
+    summary: 摘要
+    tags: 标签
+    title: 标题
+  verify_token: ''
+image:
+  ai_provider: pollinations
+  count: 3
+  ratio: '3:4'
+  source: ai
+mcp:
+  api_key: sk_sb1XLWOoxheQ4t6StxROIWZQzC3MHNDkTYMyqWx5kOw=
+  enabled: true
+  server_url: https://mcp.zouying.work/mcp
+  timeout: 180
+providers:
+- enabledModels:
+  - deepseek-chat
+  icon: D
+  id: deepseek
+  key: ''
+  models:
+  - deepseek-chat
+  - deepseek-reasoner
+  - deepseek-v3
+  - deepseek-v3-1
+  name: DeepSeek
+- enabledModels:
+  - gpt-4o
+  icon: O
+  id: openai
+  key: ''
+  models:
+  - gpt-4o
+  - gpt-4o-mini
+  - o1
+  - o1-mini
+  - o3
+  - o3-mini
+  name: OpenAI
+- enabledModels:
+  - claude-sonnet-4-20250514
+  icon: A
+  id: anthropic
+  key: ''
+  models:
+  - claude-sonnet-4-20250514
+  - claude-sonnet-4-5
+  - claude-opus-4-20251120
+  - claude-haiku-3-5
+  name: Anthropic
+- enabledModels:
+  - kimi-k2-5
+  icon: M
+  id: moonshot
+  key: ''
+  models:
+  - kimi-k2-5
+  - kimi-k2
+  - kimi-v1-8k
+  - kimi-v1-32k
+  - kimi-v1-128k
+  name: 月之暗面
+- enabledModels:
+  - glm-4-flash
+  icon: Z
+  id: zhipu
+  key: ''
+  models:
+  - glm-4-flash
+  - glm-4-plus
+  - glm-4
+  - glm-4-flashx
+  - glm-4-0520
+  name: 智谱AI
+- enabledModels:
+  - ernie-4.0-8k
+  icon: B
+  id: baidu
+  key: ''
+  models:
+  - ernie-4.0-8k
+  - ernie-4.0-4k
+  - ernie-3.5-8k
+  - ernie-speed-8k
+  - ernie-speed-32k
+  name: 百度
+- enabledModels:
+  - qwen-plus
+  icon: 阿
+  id: ali
+  key: ''
+  models:
+  - qwen-max
+  - qwen-plus
+  - qwen-turbo
+  - qwen2-5-72b
+  - qwen2-5-32b
+  name: 阿里云
+- enabledModels:
+  - hunyuan-standard
+  icon: T
+  id: tencent
+  key: ''
+  models:
+  - hunyuan-pro
+  - hunyuan-standard
+  - hunyuan-lite
+  - hunyuan-flash
+  name: 腾讯
+- enabledModels:
+  - doubao-seed-2-0
+  icon: 字
+  id: doubao
+  key: ''
+  models:
+  - doubao-seed-2-0
+  - doubao-pro-32k
+  - doubao-lite-32k
+  - doubao-vision-pro
+  name: 字节跳动
+scheduler:
+  daily_limit: 3
+  generate_times:
+  - 09:00
+  - '14:00'
+  - '19:00'
+  interval: 60
+search:
+  max_results: 5
+  source: duckduckgo
+  time_range: week
+xiaohongshu:
+  content_style: professional
+  feishu_chat_id: ''
+  feishu_user_id: ''
+  images_per_post: 3
+  keywords:
+  - AI人工智能
+  - 小程序
+  - 有赞
