@@ -15,7 +15,7 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
-APP_DIR = Path(os.getenv('APP_DIR', '/app'))
+APP_DIR = Path(os.getenv('APP_DIR', Path(__file__).parent.parent))
 DATA_DIR = APP_DIR / 'data'
 CONFIG_DIR = APP_DIR / 'config'
 LOGS_DIR = APP_DIR / 'logs'

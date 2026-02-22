@@ -1728,14 +1728,17 @@
                                 Logger().log('success', '系统配置已更新');
                             } else {
                                 Toast().show(result.message || '保存失败', 'error');
+                                Logger().log('error', `保存失败: ${result.message || '未知错误'}`);
                             }
                         } catch (e) {
+                            console.error('保存配置失败:', e);
                             storage.save(CONFIG_KEY, AppState.config);
                             Toast().show('已保存到本地（服务器同步失败）');
+                            Logger().log('error', `服务器同步失败: ${e.message || e}`);
                             Modal().close('configModal');
                         }
                     },
-                    saveKeywords: () => {
+                    saveKeywords: async () => {
                         const keywords = document.getElementById('cfg-keywords').value.split('\n').filter(k => k.trim());
                         if (keywords.length === 0) {
                             toast.show('请输入至少一个关键词', 'error');
@@ -1743,9 +1746,25 @@
                         }
                         AppState.config.keywords = keywords;
                         storage.save(CONFIG_KEY, AppState.config);
-                        toast.show(`已保存 ${keywords.length} 个关键词`);
+                        
+                        try {
+                            const response = await fetch('/api/config', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ keywords: keywords })
+                            });
+                            const result = await response.json();
+                            if (result.success) {
+                                toast.show(`已保存 ${keywords.length} 个关键词`);
+                                logger.log('success', `关键词已更新：${keywords.length}个`);
+                            } else {
+                                toast.show('服务器同步失败，已保存到本地');
+                            }
+                        } catch (e) {
+                            toast.show(`已保存 ${keywords.length} 个关键词（本地）`);
+                        }
+                        
                         Modal().close('keywordsModal');
-                        logger.log('success', `关键词已更新：${keywords.length}个`);
                     },
                     savePublishSettings: () => {
                         AppState.config.style = document.getElementById('cfg-style').value;
@@ -1808,6 +1827,10 @@
                                 break;
                             case 'keywords':
                                 Modal().open('keywordsModal');
+                                const cfgKeywords = document.getElementById('cfg-keywords');
+                                if (cfgKeywords) {
+                                    cfgKeywords.value = (AppState.config.keywords || []).join('\n');
+                                }
                                 break;
                             case 'publishSettings':
                                 Modal().open('publishSettingsModal');
@@ -1902,12 +1925,19 @@
                             if (serverConfig.xiaohongshu) {
                                 AppState.config.feishuUserId = serverConfig.xiaohongshu.feishu_user_id || '';
                                 AppState.config.feishuChatId = serverConfig.xiaohongshu.feishu_chat_id || '';
+                                AppState.config.keywords = serverConfig.xiaohongshu.keywords || [];
+                                AppState.config.style = serverConfig.xiaohongshu.content_style || 'casual';
+                                AppState.config.imgCount = serverConfig.xiaohongshu.images_per_post || 3;
                             }
                             if (serverConfig.feishu) {
                                 AppState.config.feishuAppId = serverConfig.feishu.app_id || '';
                                 AppState.config.feishuAppSecret = serverConfig.feishu.app_secret || '';
                                 AppState.config.feishuVerifyToken = serverConfig.feishu.verify_token || '';
                                 AppState.config.feishuEncryptKey = serverConfig.feishu.encrypt_key || '';
+                            }
+                            if (serverConfig.mcp) {
+                                AppState.config.mcpApiKey = serverConfig.mcp.api_key || '';
+                                AppState.config.mcpServerUrl = serverConfig.mcp.server_url || 'https://mcp.zouying.work/mcp';
                             }
                         }
                     }
