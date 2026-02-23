@@ -1,17 +1,9 @@
-# Git
-.git
-.gitignore
-.github
-
 # Python
-__pycache__
+__pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
-venv/
-ENV/
 build/
 develop-eggs/
 dist/
@@ -28,24 +20,34 @@ wheels/
 .installed.cfg
 *.egg
 
-# 数据（不要打包进镜像）
-data/
-logs/
-config/*.yaml
-.env
+# Virtual Environment
+venv/
+env/
+ENV/
 
 # IDE
-.vscode
-.idea
+.vscode/
+.idea/
 *.swp
 *.swo
 *~
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
-# 文档（镜像中不需要）
-docs/
-*.md
-!README.md
+# Logs
+*.log
+logs/
+
+# Data
+data/
+*.json
+*.db
+
+# Config (don't ignore config - we want to include default config)
+# config/ - include this for default config
+
+# Build artifacts
+*.exe
+*.spec

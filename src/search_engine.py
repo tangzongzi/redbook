@@ -63,12 +63,24 @@ class SearchEngine:
         
         try:
             with DDGS() as ddgs:
+                # DuckDuckGo 时间范围参数格式: 'd' (天), 'w' (周), 'm' (月), 'y' (年)
+                time_map = {
+                    'day': 'd',
+                    'week': 'w',
+                    'month': 'm',
+                    'year': 'y'
+                }
+                ddg_timelimit = time_map.get(self.time_range, None)
+                
                 # 获取网页搜索结果
-                ddg_results = ddgs.text(
-                    keyword,
-                    max_results=self.max_results,
-                    timelimit=self.time_range
-                )
+                search_params = {
+                    'keywords': keyword,
+                    'max_results': self.max_results
+                }
+                if ddg_timelimit:
+                    search_params['timelimit'] = ddg_timelimit
+                
+                ddg_results = ddgs.text(**search_params)
                 
                 for r in ddg_results:
                     results.append(SearchResult(
@@ -80,6 +92,24 @@ class SearchEngine:
                     
         except Exception as e:
             logger.error(f"DuckDuckGo 搜索失败: {e}")
+            # 如果时间范围导致失败，尝试不带时间范围搜索
+            if 'timelimit' in str(e) or 'week' in str(e):
+                try:
+                    logger.info("尝试不带时间范围重新搜索...")
+                    with DDGS() as ddgs:
+                        ddg_results = ddgs.text(
+                            keywords=keyword,
+                            max_results=self.max_results
+                        )
+                        for r in ddg_results:
+                            results.append(SearchResult(
+                                title=r.get('title', ''),
+                                url=r.get('href', ''),
+                                snippet=r.get('body', ''),
+                                source='duckduckgo'
+                            ))
+                except Exception as e2:
+                    logger.error(f"DuckDuckGo 重试也失败: {e2}")
             
         return results
     

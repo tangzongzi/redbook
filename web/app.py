@@ -202,8 +202,13 @@ def generate_with_ai(client, model, search_results, keyword, style='casual'):
     """使用 AI 生成内容"""
     import random
     
+    def get_item(r, key, default=''):
+        if hasattr(r, key):
+            return getattr(r, key, default)
+        return r.get(key, default)
+    
     reference_info = "\n\n".join([
-        f"- {r.get('title', '')}: {r.get('snippet', '')[:200]}"
+        f"- {get_item(r, 'title')}: {get_item(r, 'snippet')[:200]}"
         for r in search_results[:5]
     ])
     
@@ -483,11 +488,17 @@ def generate_content():
         keywords = xhs_config.get('keywords', ['AI人工智能'])
         keyword = random.choice(keywords)
         
-        searcher = SearchEngine()
-        search_results = searcher.search(keyword, max_results=5)
+        search_config = config.get('search', {})
+        searcher = SearchEngine(search_config)
+        search_results = searcher.search(keyword)
         
         if not search_results:
-            return jsonify({'success': False, 'message': '搜索无结果'}), 400
+            logger.warning(f"搜索关键词 '{keyword}' 无结果，使用模拟数据")
+            search_results = [
+                {'title': f'{keyword}最新动态', 'snippet': f'关于{keyword}的最新资讯和发展趋势', 'url': ''},
+                {'title': f'{keyword}实用技巧', 'snippet': f'分享{keyword}的实用技巧和经验', 'url': ''},
+                {'title': f'{keyword}入门指南', 'snippet': f'{keyword}新手入门完整教程', 'url': ''}
+            ]
         
         content = generate_with_ai(client, model, search_results, keyword, xhs_config.get('content_style', 'casual'))
         
@@ -497,6 +508,11 @@ def generate_content():
         img_gen = ImageGenerator()
         img_count = xhs_config.get('images_per_post', 3)
         images = img_gen.generate(keyword, content['title'], count=img_count)
+        
+        def get_result_title(r):
+            if hasattr(r, 'title'):
+                return r.title
+            return r.get('title', '')
         
         item = {
             'id': f"gen_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -509,7 +525,7 @@ def generate_content():
             'images': images,
             'status': 'pending',
             'created_at': datetime.now().isoformat(),
-            'source_results': [r.get('title', '') for r in search_results[:3]]
+            'source_results': [get_result_title(r) for r in search_results[:3]]
         }
         
         queue = load_queue()
@@ -670,6 +686,105 @@ def get_logs():
         return jsonify(all_lines[-lines:])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# 资讯收集器 API
+@app.route('/api/news', methods=['GET'])
+def get_collected_news():
+    """获取已收集的资讯"""
+    try:
+        from src.news_collector import NewsCollector
+        collector = NewsCollector()
+        
+        keyword = request.args.get('keyword')
+        limit = request.args.get('limit', 20, type=int)
+        only_unused = request.args.get('unused', 'false').lower() == 'true'
+        
+        news_list = collector.news_list
+        
+        if only_unused:
+            news_list = [n for n in news_list if not n.is_used]
+        
+        if keyword:
+            news_list = [n for n in news_list if n.keyword == keyword]
+        
+        # 转换为字典列表
+        result = [n.to_dict() for n in news_list[:limit]]
+        
+        return jsonify({
+            'success': True,
+            'data': result,
+            'total': len(collector.news_list)
+        })
+    except Exception as e:
+        logger.error(f"获取资讯失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/news/collect', methods=['POST'])
+def collect_news_now():
+    """立即收集资讯"""
+    try:
+        from src.news_collector import NewsCollector
+        collector = NewsCollector()
+        
+        keywords = request.json.get('keywords') if request.json else None
+        if keywords:
+            collector.keywords = keywords
+        
+        count = collector.collect_all()
+        
+        return jsonify({
+            'success': True,
+            'message': f'收集了 {count} 条新资讯',
+            'count': count
+        })
+    except Exception as e:
+        logger.error(f"收集资讯失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/news/<news_id>/use', methods=['POST'])
+def mark_news_used(news_id):
+    """标记资讯为已使用"""
+    try:
+        from src.news_collector import NewsCollector
+        collector = NewsCollector()
+        collector.mark_as_used(news_id)
+        
+        return jsonify({'success': True, 'message': '已标记为已使用'})
+    except Exception as e:
+        logger.error(f"标记资讯失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/news/stats', methods=['GET'])
+def get_news_stats():
+    """获取资讯统计"""
+    try:
+        from src.news_collector import NewsCollector
+        collector = NewsCollector()
+        
+        total = len(collector.news_list)
+        unused = len([n for n in collector.news_list if not n.is_used])
+        
+        # 按关键词统计
+        keyword_stats = {}
+        for news in collector.news_list:
+            keyword = news.keyword
+            if keyword not in keyword_stats:
+                keyword_stats[keyword] = {'total': 0, 'unused': 0}
+            keyword_stats[keyword]['total'] += 1
+            if not news.is_used:
+                keyword_stats[keyword]['unused'] += 1
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'total': total,
+                'unused': unused,
+                'keywords': keyword_stats
+            }
+        })
+    except Exception as e:
+        logger.error(f"获取资讯统计失败: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 @app.route('/api/feishu/sync', methods=['POST'])
